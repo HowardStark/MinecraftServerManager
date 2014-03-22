@@ -1,6 +1,7 @@
 package in.snowcraft.msm;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -10,7 +11,6 @@ public class Server extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_server);
     }
 
 
@@ -31,6 +31,16 @@ public class Server extends Activity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public void onLogginSuccess(){
+        setContentView(R.layout.activity_server);
+    }
+
+    public void onLogginFailure(){
+        Intent intent = new Intent(Server.this, Login.class);
+        startActivity(intent);
+
     }
 
 }

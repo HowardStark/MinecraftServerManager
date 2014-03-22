@@ -31,10 +31,10 @@ public class Login extends Activity {
 
     public String incoming;
 
-    EditText serverAddress;
-    EditText serverPort;
-    EditText username;
-    EditText password;
+    public static EditText serverAddress;
+    public static EditText serverPort;
+    public static EditText username;
+    public static EditText password;
     Button loginButton;
 
     @Override
@@ -44,7 +44,7 @@ public class Login extends Activity {
         loginButton = (Button) findViewById(R.id.buttonLogin);
         serverAddress = (EditText) findViewById(R.id.textAddress);
         serverPort = (EditText) findViewById(R.id.textPort);
-        username = (EditText) findViewById(R.id.textPort);
+        username = (EditText) findViewById(R.id.textUsername);
         password = (EditText) findViewById(R.id.textPassword);
 
 
@@ -53,13 +53,7 @@ public class Login extends Activity {
             public void onClick(View view) {
             if(serverAddress.getText().toString() != "" && serverPort.getText().toString() != "" && username.getText().toString() != "" && password.getText().toString() != ""){
                 try {
-                    new ServerConnection().execute(serverAddress.getText().toString(), serverPort.getText().toString(), serverPort.getText().toString(), username.getText().toString(), HashString.sha256(password.getText().toString().getBytes()));
-                    while(true){
-                        if(incoming.equals("login:success")){
-                            Intent server = new Intent(Login.this, ServerConnection.class);
-                            startActivity(server);
-                        }
-                    }
+                    new ServerConnection().execute(serverAddress.getText().toString(), serverPort.getText().toString(), username.getText().toString(), password.getText().toString());
                 } catch (Exception e) {
                     /*if(clientSocket != null)
                         try {
@@ -98,12 +92,6 @@ public class Login extends Activity {
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    public String incoming(){
-        while(true){
-            return ServerConnection.getOutput();
-        }
     }
 
 }

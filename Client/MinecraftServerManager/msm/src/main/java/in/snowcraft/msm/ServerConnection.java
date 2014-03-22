@@ -9,11 +9,14 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Arrays;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -28,37 +31,25 @@ public class ServerConnection extends AsyncTask<String, String, String> {
 
     BufferedReader in;
     PrintWriter out;
+    MCJSONApi json;
+    boolean first = true;
 
     @Override
     protected String doInBackground(String... strings) {
-        String address = strings[0];
-        int port = Integer.parseInt(strings[1]);
-        String username = strings[2];
-        String password = strings[3];
-        try{
-            Socket socket = new Socket(address, port);
-            out = new PrintWriter(socket.getOutputStream());
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out.write("login:" + username.trim() + ";" + password.trim());
-            out.flush();
-            String line;
-            try{
-                while((line = in.readLine()) != null){
-                    output = line;
-                    publishProgress(line);
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        } catch (Exception ex){
-            ex.printStackTrace();
+        if(first){
+            String address = strings[0];
+            int port = Integer.parseInt(strings[1]);
+            String username = strings[2];
+            String password = strings[3];
+            json = new MCJSONApi(username, password, address, port, first);
+        } else {
+            json.call(strings[0], Arrays.copyOfRange(strings, 1, strings.length));
         }
         return "";
     }
 
     @Override
     protected void onProgressUpdate(String... strings) {
-
     }
 
     @Override

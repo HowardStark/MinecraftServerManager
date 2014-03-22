@@ -1,0 +1,10 @@
+package in.snowcraft.msm;
+
+public class Output {
+	private String output;
+	
+	public String getOutput(){
+		return output;
+		
+	}
+}

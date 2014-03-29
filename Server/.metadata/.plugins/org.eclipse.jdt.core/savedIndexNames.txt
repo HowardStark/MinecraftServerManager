@@ -1,1 +1,0 @@
-INDEX VERSION 1.126+/Users/howard/Documents/MinecraftServerManager/Server/.metadata/.plugins/org.eclipse.jdt.core

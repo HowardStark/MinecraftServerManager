@@ -1,9 +1,0 @@
-package in.snowcraft.msm;
-
-public class Output {
-	String output;
-	
-	public Output(String target){
-		target = output;
-	}
-}

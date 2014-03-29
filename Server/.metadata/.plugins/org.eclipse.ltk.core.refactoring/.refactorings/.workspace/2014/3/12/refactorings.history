@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Delete resource &apos;Minecraft Server Manager&apos;" deleteContents="true" description="Delete resource &apos;Minecraft Server Manager&apos;" element1="/Minecraft Server Manager" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1395275801728"/>
-</session>

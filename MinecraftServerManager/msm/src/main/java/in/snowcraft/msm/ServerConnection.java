@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Arrays;
 
 public class ServerConnection extends AsyncTask<String, String, String> {
@@ -25,18 +27,36 @@ public class ServerConnection extends AsyncTask<String, String, String> {
 
     BufferedReader in;
     PrintWriter out;
-    MCJSONApi json;
+    JSONObject jsonObject;
     boolean first = true;
-    Activity activity;
+    Context context;
+    URL url;
 
-    public ServerConnection(Activity activity, MCJSONApi json){
-        this.activity = activity;
-        this.json = json;
+    public ServerConnection(Context context, URL url, JSONObject jsonObject){
+        this.context = context;
+        this.jsonObject = jsonObject;
+        this.url = url;
     }
 
     @Override
     protected String doInBackground(String... strings) {
-        return json.call(strings[0], Arrays.copyOfRange(strings, 1, strings.length));
+        try {
+            URLConnection urlConnection = url.openConnection();
+            urlConnection.setDoOutput(true);
+            PrintWriter out = new PrintWriter(urlConnection.getOutputStream());
+            out.write(jsonObject.toString());
+            out.flush();
+            out.close();
+            BufferedReader in = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+            String output;
+            while((output = in.readLine()) != null){
+                System.out.println(output);
+                return output;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     @Override
@@ -48,7 +68,7 @@ public class ServerConnection extends AsyncTask<String, String, String> {
     protected void onPostExecute(String result) {
         Intent send = new Intent("output");
         send.putExtra("output", result);
-        LocalBroadcastManager.getInstance(activity.getApplicationContext()).sendBroadcast(send);
+        LocalBroadcastManager.getInstance(context).sendBroadcast(send);
     }
 
 }

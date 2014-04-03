@@ -127,7 +127,8 @@ public class Server extends Activity {
                     System.out.println("Setting view to server");
                     JSONArray apiMethods = jsonObject.getJSONArray("success");
                     for(int count = 0; count < apiMethods.length(); count++){
-                        methods.add(new Method(apiMethods.getString(count)));
+                        if(apiMethods.getString(count).contains(".") && !apiMethods.getString(count).startsWith("adminium"))
+                            methods.add(new Method(apiMethods.getString(count)));
                     }
                     populateList();
                 } else if(result.equals("success") && !first){

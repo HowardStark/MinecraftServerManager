@@ -3,16 +3,20 @@ package in.snowcraft.msm;
 /**
  * Created by howard on 3/31/14.
  */
-public class Method {
+public class Player {
 
     private String name;
 
-    public Method(String name){
-        this.name = name;
+    public Player(){
+
     }
 
     public String getName(){
         return name;
+    }
+
+    public void setName(String name){
+
     }
 
 }

@@ -19,6 +19,7 @@ import android.support.v4.content.LocalBroadcastManager;
 
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -122,7 +123,9 @@ public class Server extends Activity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        if(drawerToggle.onOptionsItemSelected(item)){
+        int lockMode = drawerLayout.getDrawerLockMode(Gravity.LEFT);
+
+        if(lockMode == DrawerLayout.LOCK_MODE_UNLOCKED && drawerToggle.onOptionsItemSelected(item)){
             return true;
         }
         int id = item.getItemId();
@@ -164,6 +167,7 @@ public class Server extends Activity {
     }
 
     public void connectionSuccess() {
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         setFragment(1);
         //listView = (ListView) findViewById(R.id.methodList);
     }
@@ -276,6 +280,8 @@ public class Server extends Activity {
             serverPort = (EditText) rootView.findViewById(R.id.textPort);
             username = (EditText) rootView.findViewById(R.id.textUsername);
             password = (EditText) rootView.findViewById(R.id.textPassword);
+
+
             loginButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -315,6 +321,7 @@ public class Server extends Activity {
                     }
                 }
             });
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
             return rootView;
         }
     }

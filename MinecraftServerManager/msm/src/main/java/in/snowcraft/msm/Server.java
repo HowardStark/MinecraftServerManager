@@ -14,14 +14,18 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
+import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.content.LocalBroadcastManager;
 
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -54,16 +58,51 @@ public class Server extends Activity {
     ArrayList<Fragment> fragmentList = new ArrayList<Fragment>();
     ListView listView;
     List<Player> playerList = new ArrayList<Player>();
+    //Navigations/Action Bar
+    DrawerLayout drawerLayout;
+    ActionBarDrawerToggle drawerToggle;
+    ListView drawerList;
+    String[] titles;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_server);
+
+        //Nav Drawer
+        titles = getResources().getStringArray(R.array.test);
+        drawerList = (ListView) findViewById(R.id.drawer_list);
+        drawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_item, titles));
+        drawerList.setOnItemClickListener(new DrawerItemClickListener());
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
+        drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
+            public void onDrawerClosed(View view){
+                invalidateOptionsMenu();
+            }
+
+            public void onDrawerOpened(View view){
+                invalidateOptionsMenu();
+                System.out.println("HOORAY IT WORKS :D");
+            }
+        };
+        drawerLayout.setDrawerListener(drawerToggle);
+
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setHomeButtonEnabled(true);
+
         fragmentList.add(new LoginFragment());
+        fragmentList.add(new ChatFragment());
         System.out.println(fragmentList.get(0));
-        setFragment(fragmentList.get(0));
+        setFragment(0);
         LocalBroadcastManager.getInstance(this).registerReceiver(ServerReceiver, new IntentFilter("output"));
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu){
+        boolean drawerOpen = drawerLayout.isDrawerOpen(drawerList);
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -83,11 +122,21 @@ public class Server extends Activity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
+        if(drawerToggle.onOptionsItemSelected(item)){
+            return true;
+        }
         int id = item.getItemId();
         if (id == R.id.action_settings) {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private class DrawerItemClickListener implements ListView.OnItemClickListener {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id){
+            setFragment(position);
+        }
     }
 
     public void call(String method, String args[]){
@@ -115,13 +164,17 @@ public class Server extends Activity {
     }
 
     public void connectionSuccess() {
-        setContentView(R.layout.playermanagement_fragment);
+        setFragment(1);
         //listView = (ListView) findViewById(R.id.methodList);
     }
 
-    public void setFragment(Fragment fragment){
+    //Sets the current fragment.
+    public void setFragment(int position){
         FragmentManager fragmentManager = getFragmentManager();
-        fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
+        fragmentManager.beginTransaction().replace(R.id.content_frame, fragmentList.get(position)).commit();
+
+        drawerList.setItemChecked(position, true);
+        drawerLayout.closeDrawer(drawerList);
     }
 
     public BroadcastReceiver ServerReceiver = new BroadcastReceiver() {
@@ -136,14 +189,14 @@ public class Server extends Activity {
                     first = false;
                     jsonObject.getString("source");
                     connectionSuccess();
-                    System.out.println("Setting view to server");
-                    JSONArray playersArray = jsonObject.getJSONArray("success");
+                    System.out.println("Setting fragment to something else");
+                    /**JSONArray playersArray = jsonObject.getJSONArray("success");
                     for(int count = 0; count < playersArray.length(); count++) {
                         JSONObject playerObject = playersArray.getJSONObject(count);
                         playerList.add(parsePlayer(playerObject));
                     }
                     System.out.println(playerList.size());
-                    populateList();
+                    populateList();**/
                 } else if(result.equals("success") && !first){
                     JSONArray playersArray = jsonObject.getJSONArray("success");
                     for(int count = 0; count < playersArray.length(); count++){
@@ -223,11 +276,9 @@ public class Server extends Activity {
             serverPort = (EditText) rootView.findViewById(R.id.textPort);
             username = (EditText) rootView.findViewById(R.id.textUsername);
             password = (EditText) rootView.findViewById(R.id.textPassword);
-            System.out.println("Pre-click handler launch sequence initiated. I blame Gavin.");
             loginButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    System.out.println("MADE IT INTO ONCLICK. CONGRATS DIP****.");
                     if(serverAddress.getText().toString() != "" && serverPort.getText().toString() != "" && username.getText().toString() != "" && password.getText().toString() != ""){
                         try {
                             key = HashString.sha256((username.getText().toString() + "server.version" + password.getText().toString()).getBytes());
@@ -255,6 +306,10 @@ public class Server extends Activity {
                             System.out.println("Did not make it into here.");
                             return;
                         }
+                        setUsername(username.getText().toString());
+                        setPassword(password.getText().toString());
+                        setPort(Integer.parseInt(serverPort.getText().toString()));
+                        setServer(serverAddress.getText().toString());
                     } else {
                         Toast.makeText(Server.this, "Please fill in all the fields", 2 * 1000).show();
                     }
@@ -262,7 +317,6 @@ public class Server extends Activity {
             });
             return rootView;
         }
-
     }
 
     //Player Management. List of players.
@@ -337,6 +391,22 @@ public class Server extends Activity {
         }
     }
 
+    //TODO: GETTERS AND SETTERS
+    public void setUsername(String username){
+        this.username = username;
+    }
+
+    public void setPassword(String password){
+        this.username = username;
+    }
+
+    public void setPort(int port){
+        this.port = port;
+    }
+
+    public void setServer(String server){
+        this.server = server;
+    }
 
 }
 

@@ -26,6 +26,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -43,6 +44,7 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class Server extends Activity {
@@ -64,11 +66,14 @@ public class Server extends Activity {
     ActionBarDrawerToggle drawerToggle;
     ListView drawerList;
     String[] titles;
-
+    ArrayList<String> possibleMethods = new ArrayList<String>();
+    ArrayList<String> possibleGroups = new ArrayList<String>();
+    HashMap<String, Class<?>> hashMap = new HashMap<String, Class<?>>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        hashMap.put("player", PlayerManagementFragment.class);
         setContentView(R.layout.activity_server);
 
         //Nav Drawer
@@ -169,6 +174,7 @@ public class Server extends Activity {
     public void connectionSuccess() {
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         setFragment(1);
+        call("jsonapi.methods", new String[0]);
         //listView = (ListView) findViewById(R.id.methodList);
     }
 
@@ -189,18 +195,44 @@ public class Server extends Activity {
                 JSONArray jsonArray = new JSONArray(intent.getStringExtra("output"));
                 JSONObject jsonObject = jsonArray.getJSONObject(0);
                 String result = jsonObject.getString("result");
-                if(result.equals("success") && first){
+                String source = jsonObject.getString("source");
+                if(result.equals("success")){
+                    if(first){
+                        connectionSuccess();
+                        first = false;
+                    }
+                    if(source.equals("jsonapi.methods")){
+                        JSONArray methods = jsonObject.getJSONArray("success");
+                        for(int i = 0; i < methods.length(); i++){
+                            if(methods.get(i).toString().contains(".")){
+                                possibleMethods.add(methods.get(i).toString());
+                                String group = methods.get(i).toString().split(".")[0];
+                                if(!possibleGroups.contains(group)){
+                                    possibleGroups.add(group);
+                                }
+                            }
+                            System.out.println(methods.get(i).toString());
+                        }
+                        for(int j = 0; j < possibleGroups.size(); j++){
+                            try {
+                                hashMap.get(possibleGroups.get(j)).getConstructor();
+                            } catch (NoSuchMethodException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                /*if(result.equals("success") && first){
                     first = false;
                     jsonObject.getString("source");
                     connectionSuccess();
                     System.out.println("Setting fragment to something else");
-                    /**JSONArray playersArray = jsonObject.getJSONArray("success");
+                    JSONArray playersArray = jsonObject.getJSONArray("success");
                     for(int count = 0; count < playersArray.length(); count++) {
                         JSONObject playerObject = playersArray.getJSONObject(count);
                         playerList.add(parsePlayer(playerObject));
                     }
                     System.out.println(playerList.size());
-                    populateList();**/
+                    populateList();
                 } else if(result.equals("success") && !first){
                     JSONArray playersArray = jsonObject.getJSONArray("success");
                     for(int count = 0; count < playersArray.length(); count++){
@@ -208,6 +240,7 @@ public class Server extends Activity {
                         playerList.add(parsePlayer(playerObject));
                     }
                     populateList();
+                }*/
                 } else {
                     JSONObject subObject = jsonObject.getJSONObject("error");
                     int errorCode = subObject.getInt("code");
@@ -327,7 +360,9 @@ public class Server extends Activity {
     }
 
     //Player Management. List of players.
-    public static class PlayerManagementFragment extends Fragment {
+    public class PlayerManagementFragment extends Fragment {
+
+        public String name = "player";
 
         public PlayerManagementFragment() {
             // Empty constructor required for fragment subclasses
@@ -358,6 +393,9 @@ public class Server extends Activity {
 
     //Console Fragment. Used to pull data from the console.
     public static class ConsoleFragment extends Fragment {
+
+        public String name = "server";
+
         public ConsoleFragment() {
 
         }
@@ -371,21 +409,38 @@ public class Server extends Activity {
     }
 
     //Dynmap Fragment. Creates a WebView to load Dynmap.
-    public static class DynmapFragment extends Fragment {
+    public class DynmapFragment extends Fragment {
+
+        public String name = "dynmap";
+        WebView webView = new WebView(getActivity().getApplicationContext());
+
         public DynmapFragment() {
 
+        }
+
+        @Override
+        public void onCreate(Bundle savedInstance){
+            /*call("dynmap.host", new String[0]);
+            call("dynmap.port", new String[0]);*/
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.dynmap_fragment, container, false);
+            webView.getSettings().setJavaScriptEnabled(true);
+            webView.loadUrl("http://reddit.com/");
+            setContentView(webView);
+
             return rootView;
         }
     }
 
     //Chat Fragment. TBE.
     public static class ChatFragment extends Fragment {
+
+        public String name = "steams";
+
         public ChatFragment() {
 
         }

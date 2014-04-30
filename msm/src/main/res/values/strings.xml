@@ -7,8 +7,11 @@
     <string name="title_activity_login">Login</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
-    <string-array name="test">
-        <item>Test1</item>
-        <item>Test2</item>
+    <string-array name="titles">
+        <item>Players</item>
+        <item>Console</item>
+        <item>Chat</item>
+        <item>Plugins</item>
+        <item>Dynmap</item>
     </string-array>
 </resources>

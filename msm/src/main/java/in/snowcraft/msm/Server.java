@@ -66,22 +66,30 @@ public class Server extends Activity {
     DrawerLayout drawerLayout;
     ActionBarDrawerToggle drawerToggle;
     ListView drawerList;
-    String[] titles;
+    ArrayAdapter<String> drawerAdapter;
+    ArrayList<String> titles = new ArrayList<String>();
     ArrayList<String> possibleMethods = new ArrayList<String>();
     ArrayList<String> possibleGroups = new ArrayList<String>();
     HashMap<String, Class<? extends Fragment>> hashMap = new HashMap<String, Class<? extends Fragment>>();
+    HashMap<String, String> hashMapTwoTheMovie = new HashMap<String, String>();
     boolean first = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        hashMap.put("player", PlayerManagementFragment.class);
+        hashMap.put("server", ConsoleFragment.class);
+        hashMap.put("dynmap", DynmapFragment.class);
+        hashMap.put("streams", ChatFragment.class);
+        hashMapTwoTheMovie.put("player", "Player");
+        hashMapTwoTheMovie.put("server", "Console");
+        hashMapTwoTheMovie.put("streams", "Chat");
         setContentView(R.layout.activity_server);
 
         //Nav Drawer
-        titles = getResources().getStringArray(R.array.titles);
+        titles.add(hashMapTwoTheMovie.get("player"));
         drawerList = (ListView) findViewById(R.id.drawer_list);
-        drawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_item, titles));
+        drawerAdapter = new ArrayAdapter<String>(this, R.layout.drawer_item, titles);
+        drawerList.setAdapter(drawerAdapter);
         drawerList.setOnItemClickListener(new DrawerItemClickListener());
         drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
@@ -141,7 +149,7 @@ public class Server extends Activity {
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id){
-            setFragment(position);
+            setFragment(position + 1);
         }
     }
 
@@ -216,7 +224,9 @@ public class Server extends Activity {
                         }
                         for(int j = 0; j < possibleGroups.size(); j++){
                             try {
+                                System.out.println(possibleGroups.get(j));
                                 fragmentList.add(hashMap.get(possibleGroups.get(j)).getConstructor().newInstance()); //Null pointer exception
+                                titles.add(hashMapTwoTheMovie.get(possibleGroups.get(j)));
                             } catch (NoSuchMethodException e) {
                                 //Who cares. Expected.
                                 e.printStackTrace();
@@ -234,6 +244,8 @@ public class Server extends Activity {
                                 e.printStackTrace();
                             }
                         }
+                        drawerAdapter.notifyDataSetChanged();
+
                     }
                 /*if(result.equals("success") && first){
                     first = false;
@@ -454,7 +466,7 @@ public class Server extends Activity {
     //Chat Fragment. TBE.
     public static class ChatFragment extends Fragment {
 
-        public String name = "steams";
+        public String name = "streams";
 
         public ChatFragment() {
 

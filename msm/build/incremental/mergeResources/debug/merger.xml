@@ -8380,20 +8380,28 @@ false
             <file
                 path="/Users/Jarvis/Documents/MinecraftServerManager/msm/src/main/res/values/strings.xml"
                 qualifiers="" >
+                <string-array name="titles" >
+                    <item>
+Players
+                    </item>
+                    <item>
+Console
+                    </item>
+                    <item>
+Chat
+                    </item>
+                    <item>
+Plugins
+                    </item>
+                    <item>
+Dynmap
+                    </item>
+                </string-array>
+
                 <string name="action_settings" >Settings
                 </string>
                 <string name="app_name" >Minecraft Server Manager
                 </string>
-
-                <string-array name="test" >
-                    <item>
-Test1
-                    </item>
-                    <item>
-Test2
-                    </item>
-                </string-array>
-
                 <string name="title_activity_login" >Login
                 </string>
                 <string name="drawer_open" >Open navigation drawer

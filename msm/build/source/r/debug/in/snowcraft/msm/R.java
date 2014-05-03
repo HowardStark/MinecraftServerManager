@@ -17,7 +17,7 @@ public final class R {
         public static final int abc_slide_out_top=0x7f040005;
     }
     public static final class array {
-        public static final int test=0x7f050000;
+        public static final int titles=0x7f050000;
     }
     public static final class attr {
         /** <p>Must be a reference to another resource, in the form "<code>@[+][<i>package</i>:]<i>type</i>:<i>name</i></code>"

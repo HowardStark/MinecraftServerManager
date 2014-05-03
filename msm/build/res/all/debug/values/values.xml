@@ -4,9 +4,12 @@
     <!-- From: file:/Users/Jarvis/Documents/MinecraftServerManager/msm/src/main/res/values/strings.xml -->
     <eat-comment />
 
-    <string-array name="test">
-        <item>Test1</item>
-        <item>Test2</item>
+    <string-array name="titles">
+        <item>Players</item>
+        <item>Console</item>
+        <item>Chat</item>
+        <item>Plugins</item>
+        <item>Dynmap</item>
     </string-array>
     <!-- From: file:/Users/Jarvis/Documents/MinecraftServerManager/msm/build/exploded-bundles/ComAndroidSupportAppcompatV71910.aar/res/values/values.xml -->
     <eat-comment />

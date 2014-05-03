@@ -26,6 +26,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -38,11 +39,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class Server extends Activity {
@@ -64,15 +67,19 @@ public class Server extends Activity {
     ActionBarDrawerToggle drawerToggle;
     ListView drawerList;
     String[] titles;
-
+    ArrayList<String> possibleMethods = new ArrayList<String>();
+    ArrayList<String> possibleGroups = new ArrayList<String>();
+    HashMap<String, Class<? extends Fragment>> hashMap = new HashMap<String, Class<? extends Fragment>>();
+    boolean first = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        hashMap.put("player", PlayerManagementFragment.class);
         setContentView(R.layout.activity_server);
 
         //Nav Drawer
-        titles = getResources().getStringArray(R.array.test);
+        titles = getResources().getStringArray(R.array.titles);
         drawerList = (ListView) findViewById(R.id.drawer_list);
         drawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_item, titles));
         drawerList.setOnItemClickListener(new DrawerItemClickListener());
@@ -128,10 +135,6 @@ public class Server extends Activity {
         if(lockMode == DrawerLayout.LOCK_MODE_UNLOCKED && drawerToggle.onOptionsItemSelected(item)){
             return true;
         }
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -167,8 +170,10 @@ public class Server extends Activity {
     }
 
     public void connectionSuccess() {
+        System.out.println("Inside Connection Success");
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         setFragment(1);
+        call("jsonapi.methods", new String[0]);
         //listView = (ListView) findViewById(R.id.methodList);
     }
 
@@ -185,22 +190,63 @@ public class Server extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             try {
-                boolean first = true;
                 JSONArray jsonArray = new JSONArray(intent.getStringExtra("output"));
                 JSONObject jsonObject = jsonArray.getJSONObject(0);
                 String result = jsonObject.getString("result");
-                if(result.equals("success") && first){
+                String source = jsonObject.getString("source");
+                if(result.equals("success")){
+                    if(first){
+                        System.out.println("Calling connectionSuccess");
+                        connectionSuccess();
+                        first = false;
+                    }
+                    if(source.equals("jsonapi.methods")){
+                        JSONArray methods = jsonObject.getJSONArray("success");
+                        System.out.println(methods);
+                        for(int i = 0; i < methods.length(); i++){
+                            if(methods.get(i).toString().contains(".")){
+                                System.out.println(methods.get(i).toString());
+                                possibleMethods.add(methods.get(i).toString());
+                                String[] group = methods.get(i).toString().split("\\.");
+                                System.out.println(group[0]);
+                                if(!possibleGroups.contains(group[0])){
+                                    possibleGroups.add(group[0]);
+                                }
+                            }
+                        }
+                        for(int j = 0; j < possibleGroups.size(); j++){
+                            try {
+                                fragmentList.add(hashMap.get(possibleGroups.get(j)).getConstructor().newInstance()); //Null pointer exception
+                            } catch (NoSuchMethodException e) {
+                                //Who cares. Expected.
+                                e.printStackTrace();
+                            } catch (InvocationTargetException e) {
+                                e.printStackTrace();
+                                break;
+                            } catch (InstantiationException e) {
+                                e.printStackTrace();
+                                break;
+                            } catch (IllegalAccessException e) {
+                                e.printStackTrace();
+                                break;
+                            } catch (NullPointerException e) {
+                                //Who cares. Expected.
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                /*if(result.equals("success") && first){
                     first = false;
                     jsonObject.getString("source");
                     connectionSuccess();
                     System.out.println("Setting fragment to something else");
-                    /**JSONArray playersArray = jsonObject.getJSONArray("success");
+                    JSONArray playersArray = jsonObject.getJSONArray("success");
                     for(int count = 0; count < playersArray.length(); count++) {
                         JSONObject playerObject = playersArray.getJSONObject(count);
                         playerList.add(parsePlayer(playerObject));
                     }
                     System.out.println(playerList.size());
-                    populateList();**/
+                    populateList();
                 } else if(result.equals("success") && !first){
                     JSONArray playersArray = jsonObject.getJSONArray("success");
                     for(int count = 0; count < playersArray.length(); count++){
@@ -208,11 +254,13 @@ public class Server extends Activity {
                         playerList.add(parsePlayer(playerObject));
                     }
                     populateList();
+                }*/
                 } else {
                     JSONObject subObject = jsonObject.getJSONObject("error");
                     int errorCode = subObject.getInt("code");
                     switch(errorCode){
                         case 8:
+                            setFragment(0);
                             Toast.makeText(Server.this, "Username or password incorrect. Try again.", 2 * 1000).show();
                             break;
                     }
@@ -327,7 +375,9 @@ public class Server extends Activity {
     }
 
     //Player Management. List of players.
-    public static class PlayerManagementFragment extends Fragment {
+    public class PlayerManagementFragment extends Fragment {
+
+        public String name = "player";
 
         public PlayerManagementFragment() {
             // Empty constructor required for fragment subclasses
@@ -358,6 +408,9 @@ public class Server extends Activity {
 
     //Console Fragment. Used to pull data from the console.
     public static class ConsoleFragment extends Fragment {
+
+        public String name = "server";
+
         public ConsoleFragment() {
 
         }
@@ -371,21 +424,38 @@ public class Server extends Activity {
     }
 
     //Dynmap Fragment. Creates a WebView to load Dynmap.
-    public static class DynmapFragment extends Fragment {
+    public class DynmapFragment extends Fragment {
+
+        public String name = "dynmap";
+        WebView webView = new WebView(getActivity().getApplicationContext());
+
         public DynmapFragment() {
 
+        }
+
+        @Override
+        public void onCreate(Bundle savedInstance){
+            /*call("dynmap.host", new String[0]);
+            call("dynmap.port", new String[0]);*/
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.dynmap_fragment, container, false);
+            webView.getSettings().setJavaScriptEnabled(true);
+            webView.loadUrl("http://reddit.com/");
+            setContentView(webView);
+
             return rootView;
         }
     }
 
     //Chat Fragment. TBE.
     public static class ChatFragment extends Fragment {
+
+        public String name = "steams";
+
         public ChatFragment() {
 
         }
@@ -404,7 +474,7 @@ public class Server extends Activity {
     }
 
     public void setPassword(String password){
-        this.username = username;
+        this.password = password;
     }
 
     public void setPort(int port){

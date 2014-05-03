@@ -1,0 +1,6 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="in.snowcraft.msm.Server" >
+
+</menu>
+<!-- From: file:/Users/Jarvis/Documents/MinecraftServerManager/msm/src/main/res/menu/server.xml -->

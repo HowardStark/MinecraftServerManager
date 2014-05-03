@@ -39,6 +39,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -68,7 +69,8 @@ public class Server extends Activity {
     String[] titles;
     ArrayList<String> possibleMethods = new ArrayList<String>();
     ArrayList<String> possibleGroups = new ArrayList<String>();
-    HashMap<String, Class<?>> hashMap = new HashMap<String, Class<?>>();
+    HashMap<String, Class<? extends Fragment>> hashMap = new HashMap<String, Class<? extends Fragment>>();
+    boolean first = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +79,7 @@ public class Server extends Activity {
         setContentView(R.layout.activity_server);
 
         //Nav Drawer
-        titles = getResources().getStringArray(R.array.test);
+        titles = getResources().getStringArray(R.array.titles);
         drawerList = (ListView) findViewById(R.id.drawer_list);
         drawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_item, titles));
         drawerList.setOnItemClickListener(new DrawerItemClickListener());
@@ -133,10 +135,6 @@ public class Server extends Activity {
         if(lockMode == DrawerLayout.LOCK_MODE_UNLOCKED && drawerToggle.onOptionsItemSelected(item)){
             return true;
         }
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -172,6 +170,7 @@ public class Server extends Activity {
     }
 
     public void connectionSuccess() {
+        System.out.println("Inside Connection Success");
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         setFragment(1);
         call("jsonapi.methods", new String[0]);
@@ -191,32 +190,47 @@ public class Server extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             try {
-                boolean first = true;
                 JSONArray jsonArray = new JSONArray(intent.getStringExtra("output"));
                 JSONObject jsonObject = jsonArray.getJSONObject(0);
                 String result = jsonObject.getString("result");
                 String source = jsonObject.getString("source");
                 if(result.equals("success")){
                     if(first){
+                        System.out.println("Calling connectionSuccess");
                         connectionSuccess();
                         first = false;
                     }
                     if(source.equals("jsonapi.methods")){
                         JSONArray methods = jsonObject.getJSONArray("success");
+                        System.out.println(methods);
                         for(int i = 0; i < methods.length(); i++){
                             if(methods.get(i).toString().contains(".")){
+                                System.out.println(methods.get(i).toString());
                                 possibleMethods.add(methods.get(i).toString());
-                                String group = methods.get(i).toString().split(".")[0];
-                                if(!possibleGroups.contains(group)){
-                                    possibleGroups.add(group);
+                                String[] group = methods.get(i).toString().split("\\.");
+                                System.out.println(group[0]);
+                                if(!possibleGroups.contains(group[0])){
+                                    possibleGroups.add(group[0]);
                                 }
                             }
-                            System.out.println(methods.get(i).toString());
                         }
                         for(int j = 0; j < possibleGroups.size(); j++){
                             try {
-                                hashMap.get(possibleGroups.get(j)).getConstructor();
+                                fragmentList.add(hashMap.get(possibleGroups.get(j)).getConstructor().newInstance()); //Null pointer exception
                             } catch (NoSuchMethodException e) {
+                                //Who cares. Expected.
+                                e.printStackTrace();
+                            } catch (InvocationTargetException e) {
+                                e.printStackTrace();
+                                break;
+                            } catch (InstantiationException e) {
+                                e.printStackTrace();
+                                break;
+                            } catch (IllegalAccessException e) {
+                                e.printStackTrace();
+                                break;
+                            } catch (NullPointerException e) {
+                                //Who cares. Expected.
                                 e.printStackTrace();
                             }
                         }
@@ -246,6 +260,7 @@ public class Server extends Activity {
                     int errorCode = subObject.getInt("code");
                     switch(errorCode){
                         case 8:
+                            setFragment(0);
                             Toast.makeText(Server.this, "Username or password incorrect. Try again.", 2 * 1000).show();
                             break;
                     }
@@ -459,7 +474,7 @@ public class Server extends Activity {
     }
 
     public void setPassword(String password){
-        this.username = username;
+        this.password = password;
     }
 
     public void setPort(int port){

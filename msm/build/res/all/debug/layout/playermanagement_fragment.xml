@@ -4,4 +4,9 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/playerList"
+        android:layout_gravity="center_horizontal" />
 </LinearLayout><!-- From: file:/Users/Jarvis/Documents/MinecraftServerManager/msm/src/main/res/layout/playermanagement_fragment.xml -->

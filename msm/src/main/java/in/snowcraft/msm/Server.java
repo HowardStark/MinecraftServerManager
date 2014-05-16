@@ -59,8 +59,9 @@ public class Server extends Activity {
     String server;
     int port;
     String key;
+    ArrayAdapter<Player> playerAdapter;
     ArrayList<Fragment> fragmentList = new ArrayList<Fragment>();
-    ListView listView;
+    ListView playerListView;
     List<Player> playerList = new ArrayList<Player>();
     //Navigations/Action Bar
     DrawerLayout drawerLayout;
@@ -77,16 +78,16 @@ public class Server extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        hashMap.put("players", PlayerManagementFragment.class);
         hashMap.put("server", ConsoleFragment.class);
         hashMap.put("dynmap", DynmapFragment.class);
         hashMap.put("streams", ChatFragment.class);
-        hashMapTwoTheMovie.put("player", "Player");
+        hashMapTwoTheMovie.put("players", "Player");
         hashMapTwoTheMovie.put("server", "Console");
         hashMapTwoTheMovie.put("streams", "Chat");
         setContentView(R.layout.activity_server);
 
         //Nav Drawer
-        titles.add(hashMapTwoTheMovie.get("player"));
         drawerList = (ListView) findViewById(R.id.drawer_list);
         drawerAdapter = new ArrayAdapter<String>(this, R.layout.drawer_item, titles);
         drawerList.setAdapter(drawerAdapter);
@@ -108,8 +109,9 @@ public class Server extends Activity {
         getActionBar().setDisplayHomeAsUpEnabled(true);
         getActionBar().setHomeButtonEnabled(true);
 
+        //This code gaurantees that these two are the first in the fragmentList.
         fragmentList.add(new LoginFragment());
-        fragmentList.add(new ChatFragment());
+        fragmentList.add(new LoadingFragment());
         System.out.println(fragmentList.get(0));
         setFragment(0);
         LocalBroadcastManager.getInstance(this).registerReceiver(ServerReceiver, new IntentFilter("output"));
@@ -149,7 +151,7 @@ public class Server extends Activity {
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id){
-            setFragment(position + 1);
+            setFragment(position + 2);
         }
     }
 
@@ -182,18 +184,19 @@ public class Server extends Activity {
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         setFragment(1);
         call("jsonapi.methods", new String[0]);
-        //listView = (ListView) findViewById(R.id.methodList);
+        //playerListView = (ListView) findViewById(R.id.methodList);
     }
 
     //Sets the current fragment.
     public void setFragment(int position){
         FragmentManager fragmentManager = getFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, fragmentList.get(position)).commit();
-
-        drawerList.setItemChecked(position, true);
+        System.out.println("Setting fragment to " + fragmentList.get(position));
+        drawerList.setItemChecked(position - 2, true);
         drawerLayout.closeDrawer(drawerList);
     }
 
+    //TODO: Broadcast Receiver
     public BroadcastReceiver ServerReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -213,10 +216,8 @@ public class Server extends Activity {
                         System.out.println(methods);
                         for(int i = 0; i < methods.length(); i++){
                             if(methods.get(i).toString().contains(".")){
-                                System.out.println(methods.get(i).toString());
                                 possibleMethods.add(methods.get(i).toString());
                                 String[] group = methods.get(i).toString().split("\\.");
-                                System.out.println(group[0]);
                                 if(!possibleGroups.contains(group[0])){
                                     possibleGroups.add(group[0]);
                                 }
@@ -225,14 +226,9 @@ public class Server extends Activity {
                         for(int j = 0; j < possibleGroups.size(); j++){
                             try {
                                 System.out.println(possibleGroups.get(j));
+                                System.out.println("class is " + hashMap.get(possibleGroups.get(j)));
                                 fragmentList.add(hashMap.get(possibleGroups.get(j)).getConstructor().newInstance()); //Null pointer exception
                                 titles.add(hashMapTwoTheMovie.get(possibleGroups.get(j)));
-                            } catch (NoSuchMethodException e) {
-                                //Who cares. Expected.
-                                e.printStackTrace();
-                            } catch (InvocationTargetException e) {
-                                e.printStackTrace();
-                                break;
                             } catch (InstantiationException e) {
                                 e.printStackTrace();
                                 break;
@@ -241,11 +237,27 @@ public class Server extends Activity {
                                 break;
                             } catch (NullPointerException e) {
                                 //Who cares. Expected.
+                                System.out.println("NULL POINTER. JEN. U MADE ME DO DIS. I BLAYME U FOR MAH PRABLEHMS. GRRRR. #TRUMPETR");
+                                //TODO Needs to be added back before production e.printStackTrace();
+                            } catch (NoSuchMethodException e) {
+                                e.printStackTrace();
+                            } catch (InvocationTargetException e) {
                                 e.printStackTrace();
                             }
                         }
+                        if(possibleGroups.contains("players")){
+                            call("players.online", new String[0]);
+                        }
                         drawerAdapter.notifyDataSetChanged();
-
+                    } else if(source.startsWith("players")){
+                        if(source.equalsIgnoreCase("players.online")){
+                            JSONArray success = jsonObject.getJSONArray("success");
+                            for(int count = 0; count < success.length(); count++){
+                                if(!playerList.contains(parsePlayer(success.getJSONObject(count))))
+                                    playerList.add(parsePlayer(success.getJSONObject(count)));
+                            }
+                            populateList();
+                        }
                     }
                 /*if(result.equals("success") && first){
                     first = false;
@@ -283,42 +295,7 @@ public class Server extends Activity {
         }
     };
 
-    public Player parsePlayer(JSONObject jsonPlayer){
-        Player player = new Player();
-        try {
-            player.setName(jsonPlayer.getString("name"));
-            System.out.println(jsonPlayer.getString("name"));
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return player;
-    }
-
-    public void populateList(){
-        ArrayAdapter<Player> adapter = new PlayerListAdapter();
-        listView.setAdapter(adapter);
-    }
-
-    private class PlayerListAdapter extends ArrayAdapter<Player>{
-        public PlayerListAdapter(){
-            super(Server.this, R.layout.methodview, playerList);
-        }
-
-        @Override
-        public View getView(int position, View view, ViewGroup viewGroup){
-            if(view == null) {
-                view = getLayoutInflater().inflate(R.layout.methodview, viewGroup, false);
-            }
-
-            Player player = playerList.get(position);
-            TextView methodName = (TextView) view.findViewById(R.id.methodName);
-            System.out.println("Player name is " + player.getName());
-            methodName.setText(player.getName());
-
-            return view;
-        }
-    }
-
+    //TODO: Login Fragment
     public class LoginFragment extends Fragment {
 
         public EditText serverAddress;
@@ -386,26 +363,89 @@ public class Server extends Activity {
         }
     }
 
-    //Player Management. List of players.
-    public class PlayerManagementFragment extends Fragment {
+    //TODO: Loading Fragment
+    public class LoadingFragment extends Fragment {
+        public LoadingFragment(){
 
-        public String name = "player";
-
-        public PlayerManagementFragment() {
-            // Empty constructor required for fragment subclasses
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.playermanagement_fragment, container, false);
+                Bundle savedInstanceState) {
+            View rootView = inflater.inflate(R.layout.fragment_loading, container, false);
             return rootView;
         }
     }
 
-    //Player Fragment. Actual player object, with list of commands applicable on said person.
-    //TODO: Needs custom fragment
-    public static class PlayerFragment extends Fragment {
+    //TODO: Player management code
+    public Player parsePlayer(JSONObject jsonPlayer) {
+        Player player = null;
+        try {
+            player = new Player(jsonPlayer.getString("name"), jsonPlayer.getInt("health"), jsonPlayer.getInt("foodLevel"));
+            System.out.println(jsonPlayer.getString("name"));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return player;
+    }
+
+    public void populateList() {
+        playerAdapter = new PlayerListAdapter();
+        playerListView.setAdapter(playerAdapter);
+    }
+
+    public class PlayerListAdapter extends ArrayAdapter<Player>{
+        public PlayerListAdapter(){
+            super(Server.this, R.layout.methodview, playerList);
+        }
+
+        @Override
+        public View getView(int position, View view, ViewGroup viewGroup){
+            if(view == null) {
+                view = getLayoutInflater().inflate(R.layout.object_playermanagement, viewGroup, false);
+            }
+
+            Player player = playerList.get(position);
+            TextView username = (TextView) view.findViewById(R.id.username);
+            System.out.println("Player name is " + player.getName());
+            username.setText(player.getName());
+            TextView health = (TextView) view.findViewById(R.id.health);
+            System.out.println(player.getName() + " has " + player.getHealth() + " health.");
+            health.setText(player.getHealth().toString());
+            TextView food = (TextView) view.findViewById(R.id.food);
+            System.out.println(player.getName() + " has " + player.getFood() + " food.");
+            food.setText(player.getFood().toString());
+
+            return view;
+        }
+    }
+
+    //Player Management. List of players.
+    public class PlayerManagementFragment extends Fragment {
+
+        View rootView;
+        PlayerManagementFragment single = null;
+
+        // Empty constructor required for fragment subclasses
+        public PlayerManagementFragment() {
+
+        }
+
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+            System.out.println("Created view for fragment: PlayerManagementFragment");
+            rootView = inflater.inflate(R.layout.playermanagement_fragment, container, false);
+            playerListView = (ListView) rootView.findViewById(R.id.playerList);
+            playerAdapter.notifyDataSetChanged();
+            return rootView;
+        }
+
+    }
+
+    //TODO: Player Fragment. Actual player object, with list of commands applicable on said person.
+    public class PlayerFragment extends Fragment {
         public PlayerFragment() {
 
         }
@@ -418,10 +458,9 @@ public class Server extends Activity {
         }
     }
 
+    //TODO: Console Fragment
     //Console Fragment. Used to pull data from the console.
-    public static class ConsoleFragment extends Fragment {
-
-        public String name = "server";
+    public class ConsoleFragment extends Fragment {
 
         public ConsoleFragment() {
 
@@ -435,6 +474,7 @@ public class Server extends Activity {
         }
     }
 
+    //TODO: Dynmap
     //Dynmap Fragment. Creates a WebView to load Dynmap.
     public class DynmapFragment extends Fragment {
 
@@ -457,16 +497,13 @@ public class Server extends Activity {
             View rootView = inflater.inflate(R.layout.dynmap_fragment, container, false);
             webView.getSettings().setJavaScriptEnabled(true);
             webView.loadUrl("http://reddit.com/");
-            setContentView(webView);
-
             return rootView;
         }
     }
 
+    //TODO: Chat
     //Chat Fragment. TBE.
-    public static class ChatFragment extends Fragment {
-
-        public String name = "streams";
+    public class ChatFragment extends Fragment {
 
         public ChatFragment() {
 

@@ -946,9 +946,11 @@ containing a value of this type.
         public static final int action_menu_divider=0x7f080015;
         public static final int action_menu_presenter=0x7f080016;
         public static final int action_mode_close_button=0x7f080024;
-        public static final int action_settings=0x7f080048;
+        public static final int action_settings=0x7f080052;
         public static final int activity_chooser_view_content=0x7f080025;
         public static final int always=0x7f08000f;
+        public static final int armor=0x7f08004e;
+        public static final int armorText=0x7f08004d;
         public static final int beginning=0x7f08000a;
         public static final int buttonLogin=0x7f080041;
         public static final int checkbox=0x7f08002d;
@@ -964,6 +966,10 @@ containing a value of this type.
         public static final int end=0x7f08000c;
         public static final int expand_activities_button=0x7f080026;
         public static final int expanded_menu=0x7f08002c;
+        public static final int food=0x7f080050;
+        public static final int foodText=0x7f08004f;
+        public static final int health=0x7f08004c;
+        public static final int healthText=0x7f08004b;
         public static final int home=0x7f080017;
         public static final int homeAsUp=0x7f080005;
         public static final int icon=0x7f08002a;
@@ -971,11 +977,13 @@ containing a value of this type.
         public static final int image=0x7f080027;
         public static final int listMode=0x7f080001;
         public static final int list_item=0x7f080029;
-        public static final int methodName=0x7f080047;
+        public static final int methodName=0x7f080049;
         public static final int middle=0x7f08000b;
         public static final int never=0x7f08000d;
         public static final int none=0x7f080009;
         public static final int normal=0x7f080000;
+        public static final int playerList=0x7f080051;
+        public static final int progressBar=0x7f080047;
         public static final int progress_circular=0x7f080018;
         public static final int progress_horizontal=0x7f080019;
         public static final int radio=0x7f08002f;
@@ -1002,11 +1010,13 @@ containing a value of this type.
         public static final int textPassword=0x7f080040;
         public static final int textPort=0x7f08003e;
         public static final int textUsername=0x7f08003f;
+        public static final int textView=0x7f080048;
         public static final int title=0x7f08002b;
         public static final int titleLogin=0x7f08003c;
         public static final int top_action_bar=0x7f080020;
         public static final int up=0x7f080021;
         public static final int useLogo=0x7f080003;
+        public static final int username=0x7f08004a;
         public static final int withText=0x7f080010;
     }
     public static final class integer {
@@ -1043,11 +1053,13 @@ containing a value of this type.
         public static final int console_fragment=0x7f03001b;
         public static final int drawer_item=0x7f03001c;
         public static final int dynmap_fragment=0x7f03001d;
-        public static final int fragment_login=0x7f03001e;
-        public static final int methodview=0x7f03001f;
-        public static final int playermanagement_fragment=0x7f030020;
-        public static final int support_simple_spinner_dropdown_item=0x7f030021;
-        public static final int tabfragment=0x7f030022;
+        public static final int fragment_loading=0x7f03001e;
+        public static final int fragment_login=0x7f03001f;
+        public static final int methodview=0x7f030020;
+        public static final int object_playermanagement=0x7f030021;
+        public static final int playermanagement_fragment=0x7f030022;
+        public static final int support_simple_spinner_dropdown_item=0x7f030023;
+        public static final int tabfragment=0x7f030024;
     }
     public static final class menu {
         public static final int login=0x7f0d0000;

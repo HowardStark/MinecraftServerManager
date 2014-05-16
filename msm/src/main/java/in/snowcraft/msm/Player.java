@@ -6,17 +6,20 @@ package in.snowcraft.msm;
 public class Player {
 
     private String name;
+    private int health;
+    private int armor;
+    private int food;
 
-    public Player(){
-
+    public Player(String name, int health, int food){
+        this.name = name;
+        this.health = health;
+        this.food = food;
     }
 
-    public String getName(){
-        return name;
-    }
+    public String getName() { return name; }
+    public Integer getHealth() { return health; }
+    public Integer getFood() { return food; }
 
-    public void setName(String name){
 
-    }
 
 }

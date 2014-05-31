@@ -11,7 +11,6 @@ import android.content.IntentFilter;
 
 import android.net.Uri;
 
-import android.os.AsyncTask;
 import android.os.Bundle;
 
 import android.support.v4.app.ActionBarDrawerToggle;
@@ -50,17 +49,13 @@ import java.util.List;
 
 public class Server extends Activity {
 
-    public AsyncTask outgoing;
-    public Object output;
-    JSONObject outputJSON;
-    String outputString;
     String username;
     String password;
     String server;
     int port;
     String key;
     ArrayAdapter<Player> playerAdapter;
-    ArrayList<Fragment> fragmentList = new ArrayList<Fragment>();
+    HashMap<String, ExtendedFragment> fragmentList = new HashMap<String, ExtendedFragment>();
     ListView playerListView;
     List<Player> playerList = new ArrayList<Player>();
     //Navigations/Action Bar
@@ -71,8 +66,7 @@ public class Server extends Activity {
     ArrayList<String> titles = new ArrayList<String>();
     ArrayList<String> possibleMethods = new ArrayList<String>();
     ArrayList<String> possibleGroups = new ArrayList<String>();
-    HashMap<String, Class<? extends Fragment>> hashMap = new HashMap<String, Class<? extends Fragment>>();
-    HashMap<String, String> hashMapTwoTheMovie = new HashMap<String, String>();
+    HashMap<String, Class<? extends ExtendedFragment>> hashMap = new HashMap<String, Class<? extends ExtendedFragment>>();
     boolean first = true;
 
     @Override
@@ -82,9 +76,6 @@ public class Server extends Activity {
         hashMap.put("server", ConsoleFragment.class);
         hashMap.put("dynmap", DynmapFragment.class);
         hashMap.put("streams", ChatFragment.class);
-        hashMapTwoTheMovie.put("players", "Player");
-        hashMapTwoTheMovie.put("server", "Console");
-        hashMapTwoTheMovie.put("streams", "Chat");
         setContentView(R.layout.activity_server);
 
         //Nav Drawer
@@ -105,15 +96,14 @@ public class Server extends Activity {
             }
         };
         drawerLayout.setDrawerListener(drawerToggle);
-
         getActionBar().setDisplayHomeAsUpEnabled(true);
         getActionBar().setHomeButtonEnabled(true);
 
         //This code gaurantees that these two are the first in the fragmentList.
-        fragmentList.add(new LoginFragment());
-        fragmentList.add(new LoadingFragment());
+        fragmentList.put("Login", new LoginFragment());
+        fragmentList.put("Loading", new LoadingFragment());
         System.out.println(fragmentList.get(0));
-        setFragment(0);
+        setFragment("Login");
         LocalBroadcastManager.getInstance(this).registerReceiver(ServerReceiver, new IntentFilter("output"));
     }
 
@@ -151,7 +141,11 @@ public class Server extends Activity {
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id){
-            setFragment(position + 2);
+            for(ExtendedFragment fragment : fragmentList.values()){
+                if(fragment.getPlace() == position){
+                    setFragment(fragment.getTitle());
+                }
+            }
         }
     }
 
@@ -182,17 +176,17 @@ public class Server extends Activity {
     public void connectionSuccess() {
         System.out.println("Inside Connection Success");
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-        setFragment(1);
+        setFragment("Loading");
         call("jsonapi.methods", new String[0]);
         //playerListView = (ListView) findViewById(R.id.methodList);
     }
 
     //Sets the current fragment.
-    public void setFragment(int position){
+    public void setFragment(String name){
         FragmentManager fragmentManager = getFragmentManager();
-        fragmentManager.beginTransaction().replace(R.id.content_frame, fragmentList.get(position)).commit();
-        System.out.println("Setting fragment to " + fragmentList.get(position));
-        drawerList.setItemChecked(position - 2, true);
+        fragmentManager.beginTransaction().replace(R.id.content_frame, fragmentList.get(name)).commit();
+        System.out.println("Setting fragment to " + fragmentList.get(name));
+        drawerList.setItemChecked(fragmentList.get(name).getPlace() - 2, true);
         drawerLayout.closeDrawer(drawerList);
     }
 
@@ -223,12 +217,14 @@ public class Server extends Activity {
                                 }
                             }
                         }
-                        for(int j = 0; j < possibleGroups.size(); j++){
+                        for (String possibleGroup : possibleGroups) {
                             try {
-                                System.out.println(possibleGroups.get(j));
-                                System.out.println("class is " + hashMap.get(possibleGroups.get(j)));
-                                fragmentList.add(hashMap.get(possibleGroups.get(j)).getConstructor().newInstance()); //Null pointer exception
-                                titles.add(hashMapTwoTheMovie.get(possibleGroups.get(j)));
+                                System.out.println(possibleGroup);
+                                System.out.println("class is " + hashMap.get(possibleGroup));
+                                String title = hashMap.get(possibleGroup).getConstructor().newInstance().getTitle();
+                                fragmentList.put(title, hashMap.get(possibleGroup).getConstructor().newInstance()); //Null pointer exception
+                                fragmentList.get(title).setPlace(titles.size());
+                                titles.add(title);
                             } catch (InstantiationException e) {
                                 e.printStackTrace();
                                 break;
@@ -256,7 +252,7 @@ public class Server extends Activity {
                                 if(!playerList.contains(parsePlayer(success.getJSONObject(count))))
                                     playerList.add(parsePlayer(success.getJSONObject(count)));
                             }
-                            populateList();
+                            setFragment("Player");
                         }
                     }
                 /*if(result.equals("success") && first){
@@ -284,7 +280,7 @@ public class Server extends Activity {
                     int errorCode = subObject.getInt("code");
                     switch(errorCode){
                         case 8:
-                            setFragment(0);
+                            setFragment("Login");
                             Toast.makeText(Server.this, "Username or password incorrect. Try again.", 2 * 1000).show();
                             break;
                     }
@@ -296,7 +292,7 @@ public class Server extends Activity {
     };
 
     //TODO: Login Fragment
-    public class LoginFragment extends Fragment {
+    public static class LoginFragment extends ExtendedFragment {
 
         public EditText serverAddress;
         public EditText serverPort;
@@ -304,13 +300,22 @@ public class Server extends Activity {
         public EditText password;
         public Button loginButton;
 
+        View rootView;
+        Server parentActivity;
+
+        @Override
+        public void onAttach(Activity activity) {
+            super.onAttach(activity);
+            parentActivity = (Server) activity;
+        }
+
         public LoginFragment() {
 
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_login, container, false);
+            rootView = inflater.inflate(R.layout.fragment_login, container, false);
 
             loginButton = (Button) rootView.findViewById(R.id.buttonLogin);
             serverAddress = (EditText) rootView.findViewById(R.id.textAddress);
@@ -324,12 +329,12 @@ public class Server extends Activity {
                 public void onClick(View view) {
                     if(serverAddress.getText().toString() != "" && serverPort.getText().toString() != "" && username.getText().toString() != "" && password.getText().toString() != ""){
                         try {
-                            key = HashString.sha256((username.getText().toString() + "server.version" + password.getText().toString()).getBytes());
-                            System.out.println("Test 6: Better Hashing. Username: " + username + ". Password: " + password + ". Player: " + "server.version" + ". Key: " + key + ".");
+                            parentActivity.key = HashString.sha256((username.getText().toString() + "server.version" + password.getText().toString()).getBytes());
+                            System.out.println("Test 6: Better Hashing. Username: " + username + ". Password: " + password + ". Player: " + "server.version" + ". Key: " + parentActivity.key + ".");
                             JSONObject jsonObject = new JSONObject();
                             try {
                                 jsonObject.put("name", "server.version");
-                                jsonObject.put("key", key);
+                                jsonObject.put("key", parentActivity.key);
                                 jsonObject.put("username", username.getText().toString());
                                 jsonObject.put("arguments", new JSONArray(Arrays.asList(new String[0])));
                                 jsonObject.put("tag", "");
@@ -341,7 +346,7 @@ public class Server extends Activity {
                                 String urlArgs = Uri.parse("api/2/call").buildUpon().appendQueryParameter("json", jsonObject.toString()).build().toString();
                                 System.out.println(urlArgs);
                                 URL url = new URL("http", serverAddress.getText().toString(), Integer.parseInt(serverPort.getText().toString()), urlArgs);
-                                new ServerConnection(getBaseContext(), url, jsonObject).execute();
+                                new ServerConnection(parentActivity.getBaseContext(), url, jsonObject).execute();
                             } catch (MalformedURLException e) {
                                 e.printStackTrace();
                             }
@@ -349,22 +354,34 @@ public class Server extends Activity {
                             System.out.println("Did not make it into here.");
                             return;
                         }
-                        setUsername(username.getText().toString());
-                        setPassword(password.getText().toString());
-                        setPort(Integer.parseInt(serverPort.getText().toString()));
-                        setServer(serverAddress.getText().toString());
+                        parentActivity.setUsername(username.getText().toString());
+                        parentActivity.setPassword(password.getText().toString());
+                        parentActivity.setPort(Integer.parseInt(serverPort.getText().toString()));
+                        parentActivity.setServer(serverAddress.getText().toString());
                     } else {
-                        Toast.makeText(Server.this, "Please fill in all the fields", 2 * 1000).show();
+                        Toast.makeText(parentActivity.getApplicationContext(), "Please fill in all the fields", 2 * 1000).show();
                     }
                 }
             });
-            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+            parentActivity.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
             return rootView;
         }
     }
 
     //TODO: Loading Fragment
-    public class LoadingFragment extends Fragment {
+    public static class LoadingFragment extends ExtendedFragment {
+
+        private int place;
+
+        View rootView;
+        Server parentActivity;
+
+        @Override
+        public void onAttach(Activity activity) {
+            super.onAttach(activity);
+            parentActivity = (Server) activity;
+        }
+
         public LoadingFragment(){
 
         }
@@ -372,7 +389,7 @@ public class Server extends Activity {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_loading, container, false);
+            rootView = inflater.inflate(R.layout.fragment_loading, container, false);
             return rootView;
         }
     }
@@ -389,9 +406,11 @@ public class Server extends Activity {
         return player;
     }
 
-    public void populateList() {
+    public void populatePlayerList(View rootView) {
         playerAdapter = new PlayerListAdapter();
+        playerListView = (ListView) rootView.findViewById(R.id.playerList);
         playerListView.setAdapter(playerAdapter);
+        playerAdapter.notifyDataSetChanged();
     }
 
     public class PlayerListAdapter extends ArrayAdapter<Player>{
@@ -421,14 +440,23 @@ public class Server extends Activity {
     }
 
     //Player Management. List of players.
-    public class PlayerManagementFragment extends Fragment {
+    public static class PlayerManagementFragment extends ExtendedFragment {
 
         View rootView;
-        PlayerManagementFragment single = null;
+        Server parentActivity;
 
-        // Empty constructor required for fragment subclasses
-        public PlayerManagementFragment() {
+        public static String title = "Player";
 
+        @Override
+        public String getTitle() {
+            return title;
+        }
+
+
+        @Override
+        public void onAttach(Activity activity) {
+            super.onAttach(activity);
+            parentActivity = (Server) activity;
         }
 
 
@@ -437,15 +465,29 @@ public class Server extends Activity {
                                  Bundle savedInstanceState) {
             System.out.println("Created view for fragment: PlayerManagementFragment");
             rootView = inflater.inflate(R.layout.playermanagement_fragment, container, false);
-            playerListView = (ListView) rootView.findViewById(R.id.playerList);
-            playerAdapter.notifyDataSetChanged();
             return rootView;
+        }
+
+        @Override
+        public void onActivityCreated(Bundle savedInstanceState) {
+            super.onActivityCreated(savedInstanceState);
+            parentActivity.populatePlayerList(rootView);
         }
 
     }
 
     //TODO: Player Fragment. Actual player object, with list of commands applicable on said person.
-    public class PlayerFragment extends Fragment {
+    public static class PlayerFragment extends Fragment {
+
+        View rootView;
+        Server parentActivity;
+
+        @Override
+        public void onAttach(Activity activity) {
+            super.onAttach(activity);
+            parentActivity = (Server) activity;
+        }
+
         public PlayerFragment() {
 
         }
@@ -460,7 +502,23 @@ public class Server extends Activity {
 
     //TODO: Console Fragment
     //Console Fragment. Used to pull data from the console.
-    public class ConsoleFragment extends Fragment {
+    public static class ConsoleFragment extends ExtendedFragment {
+
+        View rootView;
+        Server parentActivity;
+
+        public static String title = "Console";
+
+        @Override
+        public String getTitle() {
+            return title;
+        }
+
+        @Override
+        public void onAttach(Activity activity) {
+            super.onAttach(activity);
+            parentActivity = (Server) activity;
+        }
 
         public ConsoleFragment() {
 
@@ -476,9 +534,26 @@ public class Server extends Activity {
 
     //TODO: Dynmap
     //Dynmap Fragment. Creates a WebView to load Dynmap.
-    public class DynmapFragment extends Fragment {
+    public static class DynmapFragment extends ExtendedFragment {
 
-        public String name = "dynmap";
+        private int place;
+
+        View rootView;
+        Server parentActivity;
+
+        public static String title = "Dynmap";
+
+        @Override
+        public String getTitle() {
+            return title;
+        }
+
+        @Override
+        public void onAttach(Activity activity) {
+            super.onAttach(activity);
+            parentActivity = (Server) activity;
+        }
+
         WebView webView = new WebView(getActivity().getApplicationContext());
 
         public DynmapFragment() {
@@ -503,7 +578,23 @@ public class Server extends Activity {
 
     //TODO: Chat
     //Chat Fragment. TBE.
-    public class ChatFragment extends Fragment {
+    public static class ChatFragment extends ExtendedFragment {
+
+        View rootView;
+        Server parentActivity;
+
+        public static String title = "Chat";
+
+        @Override
+        public String getTitle() {
+            return title;
+        }
+
+        @Override
+        public void onAttach(Activity activity) {
+            super.onAttach(activity);
+            parentActivity = (Server) activity;
+        }
 
         public ChatFragment() {
 
